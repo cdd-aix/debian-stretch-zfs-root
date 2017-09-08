@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash -e
 #
 # debian-stretch-zfs-root.sh V1.00
 #
@@ -44,7 +44,6 @@ while read -r IDLINK; do
     BYID["$(basename "$(readlink "$IDLINK")")"]="$IDLINK"
 done < <(find /dev/disk/by-id/ -type l)
 
-
 for DISK in $(lsblk -I8 -dn -o name); do
     if [ -z "${BYID[$DISK]}" ]; then
         SELECT+=("$DISK" "(no /dev/disk/by-id persistent device name available)" off)
@@ -57,15 +56,15 @@ TMPFILE=$(mktemp)
 whiptail --backtitle "$0" --title "Drive selection" --separate-output \
          --checklist "\nPlease select ZFS RAID drives\n" 20 74 8 "${SELECT[@]}" 2>"$TMPFILE"
 
-if [ $? -ne 0 ]                 ; then
+if [ $? -ne 0 ]; then
     exit 1
 fi
 
 while read -r DISK; do
     if [ -z "${BYID[$DISK]}" ]; then
-        DISKS+=("$DISK")
-        ZFSPARTITIONS+=("$DISK$PARTZFS")
-        EFIPARTITIONS+=("$DISK$PARTEFI")
+		DISKS+=("/dev/$DISK")
+		ZFSPARTITIONS+=("/dev/$DISK$PARTZFS")
+		EFIPARTITIONS+=("/dev/$DISK$PARTEFI")
     else
         DISKS+=("${BYID[$DISK]}")
         ZFSPARTITIONS+=("${BYID[$DISK]}-part$PARTZFS")
@@ -81,7 +80,7 @@ whiptail --backtitle "$0" --title "RAID level selection" --separate-output \
          "RAIDZ2" "Distributed parity, two parity blocks" off \
          "RAIDZ3" "Distributed parity, three parity blocks" off 2>"$TMPFILE"
 
-if [ $? -ne 0 ]                 ; then
+if [ $? -ne 0 ]; then
     exit 1
 fi
 
@@ -102,7 +101,7 @@ case "$RAIDLEVEL" in
                 RAIDDEF+=" mirror"
             fi
             RAIDDEF+=" $ZFSPARTITION"
-            ((I++))
+		((I++)) || true
         done
         ;;
     *)
@@ -117,7 +116,7 @@ esac
 whiptail --backtitle "$0" --title "Confirmation" \
          --yesno "\nAre you sure to destroy ZFS pool '$ZPOOL' (if existing), wipe all data of disks '${DISKS[*]}' and create a RAID '$RAIDLEVEL'?\n" 20 74
 
-if [ $? -ne 0 ]                 ; then
+if [ $? -ne 0 ]; then
     exit 1
 fi
 
@@ -133,22 +132,28 @@ case $DEBRELEASE in
     8*)
         echo "deb http://http.debian.net/debian/ jessie-backports main contrib non-free" >/etc/apt/sources.list.d/jessie-backports.list
         test -f /var/lib/apt/lists/http.debian.net_debian_dists_jessie-backports_InRelease || apt-get update
-        test -d /usr/share/doc/zfs-dkms || DEBIAN_FRONTEND=noninteractive apt-get install --yes gdisk debootstrap dosfstools zfs-dkms/jessie-backports
+		if [ ! -d /usr/share/doc/zfs-dkms ]; then NEED_PACKAGES+=(zfs-dkms/jessie-backports); fi
         ;;
 
     9*)
         echo "deb http://deb.debian.org/debian/ stretch contrib non-free" >/etc/apt/sources.list.d/contrib-non-free.list
         test -f /var/lib/apt/lists/deb.debian.org_debian_dists_stretch_non-free_binary-amd64_Packages || apt-get update
-        test -d /usr/share/doc/zfs-dkms || DEBIAN_FRONTEND=noninteractive apt-get install --yes gdisk debootstrap dosfstools zfs-dkms
+		if [ ! -d /usr/share/doc/zfs-dkms ]; then NEED_PACKAGES+=(zfs-dkms); fi
         ;;
     *)
         echo "Unsupported Debian Live CD release" >&2
         exit 1
         ;;
 esac
+if [ ! -f /sbin/zpool ]; then NEED_PACKAGES+=(zfsutils-linux); fi
+if [ ! -f /usr/sbin/debootstrap ]; then NEED_PACKAGES+=(debootstrap); fi
+if [ ! -f /sbin/sgdisk ]; then NEED_PACKAGES+=(gdisk); fi
+if [ ! -f /sbin/mkdosfs ]; then NEED_PACKAGES+=(dosfstools); fi
+echo "Need packages: ${NEED_PACKAGES[@]}"
+if [ -n "${NEED_PACKAGES[*]}" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes "${NEED_PACKAGES[@]}"; fi
 
 modprobe zfs
-if [ $? -ne 0 ] ; then
+if [ $? -ne 0 ]; then
     echo "Unable to load ZFS kernel module" >&2
     exit 1
 fi
@@ -187,7 +192,7 @@ zfs create "$ZPOOL/ROOT"
 zfs create -o mountpoint=/ "$ZPOOL/ROOT/debian-$TARGETDIST"
 zpool set bootfs="$ZPOOL/ROOT/debian-$TARGETDIST" "$ZPOOL"
 
-zfs create -o mountpoint=/tmp -o setuid=off -o exec=off -o quota="$SIZETMP" "$ZPOOL/tmp"
+zfs create -o mountpoint=/tmp -o setuid=off -o exec=off -o devices=off -o com.sun:auto-snapshot=false -o quota=$SIZETMP $ZPOOL/tmp
 chmod 1777 /target/tmp
 
 # /var needs to be mounted via fstab, the ZFS mount script runs too late during boot
@@ -201,8 +206,10 @@ mkdir -v -m 1777 /target/var/tmp
 mount -t zfs "$ZPOOL/var/tmp" /target/var/tmp
 chmod 1777 /target/var/tmp
 
-zfs create -V $SIZESWAP -b "$(getconf PAGESIZE)" -o primarycache=metadata -o com.sun:auto-snapshot=false -o logbias=throughput -o sync=always "$ZPOOL/swap"
-mkswap -f "/dev/zvol/$ZPOOL/swap"
+zfs create -V $SIZESWAP -b "$(getconf PAGESIZE)" -o primarycache=metadata -o com.sun:auto-snapshot=false -o logbias=throughput -o sync=always $ZPOOL/swap
+# sometimes needed to wait for /dev/zvol/$ZPOOL/swap to appear
+sleep 2
+mkswap -f /dev/zvol/$ZPOOL/swap
 
 zpool status
 zfs list
@@ -219,12 +226,12 @@ for EFIPARTITION in "${EFIPARTITIONS[@]}"; do
         mkdir -pv /mnt/efi-$I
         mount "$EFIPARTITION" /mnt/efi-$I
     fi
-    ((I++))
+	((I++)) || true
 done
 
 debootstrap --include=aptitude,openssh-server,locales,vim-tiny,rsync,sharutils,psmisc,htop,patch,less $TARGETDIST /target http://http.debian.net/debian/
 
-NEWHOST="${2:-debian-$(hostid)}"
+NEWHOST=debian-$(hostid)
 echo "$NEWHOST" >/target/etc/hostname
 sed -i "1s/^/127.0.1.1\t$NEWHOST\n/" /target/etc/hosts
 
@@ -276,8 +283,8 @@ for EFIPARTITION in "${EFIPARTITIONS[@]}"; do
         umount /mnt/efi-$I
         EFIBAKPART="#"
     fi
-    echo "${EFIFSTAB}${EFIBAKPART}PARTUUID=$(blkid -s PARTUUID -o value "$EFIPARTITION") /boot/efi vfat defaults 0 1" >> /target/etc/fstab
-    ((I++))
+	echo "${EFIFSTAB}${EFIBAKPART}PARTUUID=$(blkid -s PARTUUID -o value $EFIPARTITION) /boot/efi vfat defaults 0 1" >> /target/etc/fstab
+	((I++)) || true
 done
 umount /target/boot/efi
 
