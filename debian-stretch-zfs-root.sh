@@ -26,7 +26,7 @@
 
 ### Static settings
 
-ZPOOL="${1:-tank}"
+ZPOOL=rpool
 TARGETDIST=stretch
 
 PARTBIOS=1
@@ -306,4 +306,4 @@ sync
 #zfs umount -a
 
 ## chroot /target /bin/bash --login
-## zpool import -R /target tank
+## zpool import -R /target rpool
