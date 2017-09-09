@@ -1,5 +1,5 @@
 #!/bin/bash -e
-#
+#  -*- sh-basic-offset: 8; -*-
 # debian-stretch-zfs-root.sh V1.00
 #
 # Install Debian GNU/Linux 9 Stretch to a native ZFS root filesystem
@@ -57,7 +57,7 @@ done
 
 TMPFILE=$(mktemp)
 whiptail --backtitle "$0" --title "Drive selection" --separate-output \
-	--checklist "\nPlease select ZFS RAID drives\n" 20 74 8 "${SELECT[@]}" 2>"$TMPFILE"
+	 --checklist "\nPlease select ZFS RAID drives\n" 20 74 8 "${SELECT[@]}" 2>"$TMPFILE"
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -76,12 +76,12 @@ while read -r DISK; do
 done < "$TMPFILE"
 
 whiptail --backtitle "$0" --title "RAID level selection" --separate-output \
-	--radiolist "\nPlease select ZFS RAID level\n" 20 74 8 \
-	"RAID0" "Striped disks" off \
-	"RAID1" "Mirrored disks (RAID10 for n>=4)" on \
-	"RAIDZ" "Distributed parity, one parity block" off \
-	"RAIDZ2" "Distributed parity, two parity blocks" off \
-	"RAIDZ3" "Distributed parity, three parity blocks" off 2>"$TMPFILE"
+	 --radiolist "\nPlease select ZFS RAID level\n" 20 74 8 \
+	 "RAID0" "Striped disks" off \
+	 "RAID1" "Mirrored disks (RAID10 for n>=4)" on \
+	 "RAIDZ" "Distributed parity, one parity block" off \
+	 "RAIDZ2" "Distributed parity, two parity blocks" off \
+	 "RAIDZ3" "Distributed parity, three parity blocks" off 2>"$TMPFILE"
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -90,34 +90,34 @@ fi
 RAIDLEVEL=$(head -n1 "$TMPFILE" | tr '[:upper:]' '[:lower:]')
 
 case "$RAIDLEVEL" in
-  raid0)
-	RAIDDEF="${ZFSPARTITIONS[*]}"
-  	;;
-  raid1)
-	if [ $((${#ZFSPARTITIONS[@]} % 2)) -ne 0 ]; then
-		echo "Need an even number of disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
-		exit 1
-	fi
-	I=0
-	for ZFSPARTITION in "${ZFSPARTITIONS[@]}"; do
-		if [ $((I % 2)) -eq 0 ]; then
-			RAIDDEF+=" mirror"
+	raid0)
+		RAIDDEF="${ZFSPARTITIONS[*]}"
+  		;;
+	raid1)
+		if [ $((${#ZFSPARTITIONS[@]} % 2)) -ne 0 ]; then
+			echo "Need an even number of disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
+			exit 1
 		fi
-		RAIDDEF+=" $ZFSPARTITION"
-		((I++)) || true
-	done
-  	;;
-  *)
-	if [ ${#ZFSPARTITIONS[@]} -lt 3 ]; then
-		echo "Need at least 3 disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
-		exit 1
-	fi
-	RAIDDEF="$RAIDLEVEL ${ZFSPARTITIONS[*]}"
-  	;;
+		I=0
+		for ZFSPARTITION in "${ZFSPARTITIONS[@]}"; do
+			if [ $((I % 2)) -eq 0 ]; then
+				RAIDDEF+=" mirror"
+			fi
+			RAIDDEF+=" $ZFSPARTITION"
+			((I++)) || true
+		done
+  		;;
+	*)
+		if [ ${#ZFSPARTITIONS[@]} -lt 3 ]; then
+			echo "Need at least 3 disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
+			exit 1
+		fi
+		RAIDDEF="$RAIDLEVEL ${ZFSPARTITIONS[*]}"
+  		;;
 esac
 
 whiptail --backtitle "$0" --title "Confirmation" \
-	--yesno "\nAre you sure to destroy ZFS pool '$ZPOOL' (if existing), wipe all data of disks '${DISKS[*]}' and create a RAID '$RAIDLEVEL'?\n" 20 74
+	 --yesno "\nAre you sure to destroy ZFS pool '$ZPOOL' (if existing), wipe all data of disks '${DISKS[*]}' and create a RAID '$RAIDLEVEL'?\n" 20 74
 
 if [ $? -ne 0 ]; then
 	exit 1
@@ -168,8 +168,8 @@ for DISK in "${DISKS[@]}"; do
 	sgdisk --zap-all $DISK
 
 	sgdisk -a1 -n$PARTBIOS:34:2047   -t$PARTBIOS:EF02 \
-	           -n$PARTEFI:2048:+512M -t$PARTEFI:EF00 \
-                   -n$PARTZFS:0:0        -t$PARTZFS:BF01 $DISK
+	       -n$PARTEFI:2048:+512M -t$PARTEFI:EF00 \
+               -n$PARTZFS:0:0        -t$PARTZFS:BF01 $DISK
 done
 
 sleep 2
