@@ -101,7 +101,7 @@ case "$RAIDLEVEL" in
   		;;
 	raid1)
 		if [ $((${#ZFSPARTITIONS[@]} % 2)) -ne 0 ]; then
-			echo "Need an even number of disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
+			echo "Need an even number of disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[*]}" >&2
 			exit 1
 		fi
 		I=0
@@ -115,7 +115,7 @@ case "$RAIDLEVEL" in
   		;;
 	*)
 		if [ ${#ZFSPARTITIONS[@]} -lt 3 ]; then
-			echo "Need at least 3 disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[@]}" >&2
+			echo "Need at least 3 disks for RAID level '$RAIDLEVEL': ${ZFSPARTITIONS[*]}" >&2
 			exit 1
 		fi
 		RAIDDEF="$RAIDLEVEL ${ZFSPARTITIONS[*]}"
@@ -158,7 +158,7 @@ if [ ! -f /sbin/zpool ]; then NEED_PACKAGES+=(zfsutils-linux); fi
 if [ ! -f /usr/sbin/debootstrap ]; then NEED_PACKAGES+=(debootstrap); fi
 if [ ! -f /sbin/sgdisk ]; then NEED_PACKAGES+=(gdisk); fi
 if [ ! -f /sbin/mkdosfs ]; then NEED_PACKAGES+=(dosfstools); fi
-echo "Need packages: ${NEED_PACKAGES[@]}"
+echo "Need packages: ${NEED_PACKAGES[*]}"
 if [ -n "${NEED_PACKAGES[*]}" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes "${NEED_PACKAGES[@]}"; fi
 
 modprobe zfs
