@@ -11,6 +11,7 @@
 * 2017Sep10 Explore having dkms build binary packages
 * 2017Sep10 Create additional apt lists from existing config instead of replacing
 * 2017Sep10 apt-get install is cheap when packages are already installed.  Mutating the package list is confusing
+* 2017Sep10 grub-pc needs /tmp executable
 # DONE
 * 2017Sep10 2017Sep10 Provide utility to destroy /target for testing
 * 2017Sep10 2017Sep10 eradicate SC2145 errors
