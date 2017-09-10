@@ -254,13 +254,23 @@ $ZPOOL/var                /var            zfs     defaults        0       0
 $ZPOOL/var/tmp            /var/tmp        zfs     defaults        0       0
 EOF
 
-mount --bind /dev /target/dev
-mount --bind /dev/pts /target/dev/pts
-mount --bind /dev/shm /target/dev/shm
+target_bind_mount() {
+	local mountpoint="$1" fs
+	shift
+	for fs in "$@"; do
+		mount --bind "$fs" "${mountpoint}${fs}"
+	done
+}
+
+target_bind_mount \
+    /target \
+    /dev \
+    /dev/pts \
+    /dev/shm \
+    /proc \
+    /sys
 # Intentionally skip /dev/mqueue and /dev/hugepages
-mount --bind /proc /target/proc
 # Intentionally skip /proc/sys/fs/binfmt_misc and /proc/fs/nfsd
-mount --bind /sys /target/sys
 # Intentionally skipping cgroup FSes.  Unintentionally skipping many more
 ln -s /proc/mounts /target/etc/mtab
 
