@@ -24,6 +24,12 @@
 # with this program. If not, see <http://www.gnu.org/licenses/gpl-3.0.txt>.
 #
 
+### Bail early if we are not root
+if (( "$EUID" != 0 )); then
+	echo "$0 must be run as root" >&2
+	exit 1
+fi
+
 ### Static settings
 
 ZPOOL=rpool
