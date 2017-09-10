@@ -9,6 +9,8 @@
 * 2017Sep10 ask disks per mirror group if raid1 2, 3, 4, 5, 7
 * 2017Sep10 See if efi boot partition fallbacks viable via https://www.centos.org/forums/viewtopic.php?t=46952
 * 2017Sep10 Make aptitude an option
+* 2017Sep10 Explore having dkms build binary packages
+* 2017Sep10 Create additional apt lists from existing config instead of replacing
 # DONE
 * 2017Sep10 2017Sep10 eradicate SC2145 errors
 * 2017Sep10 2017Sep10 Make sure script runs as root
