@@ -43,10 +43,21 @@ SIZESWAP=2G
 SIZETMP=3G
 SIZEVARTMP=3G
 
-GRUBPKG=grub-pc
-#GRUBPKG=grub-efi-amd64 # INCOMPLETE NOT TESTED
-
 ### User settings
+
+DPKG_ARCHITECTURE=$(dpkg --print-architecture)
+if [ -r /sys/firmware/efi ]; then
+	EFI=true
+	GRUBPKG="grub-efi-$DPKG_ARCHITECTURE"
+else
+	EFI=false
+	GRUBPKG="grub-pc"
+fi
+
+if "$EFI"; then
+	echo "Configuring for EFI"
+	read -r
+fi
 
 declare -A BYID
 while read -r IDLINK; do
