@@ -254,9 +254,14 @@ $ZPOOL/var                /var            zfs     defaults        0       0
 $ZPOOL/var/tmp            /var/tmp        zfs     defaults        0       0
 EOF
 
-mount --rbind /dev /target/dev
-mount --rbind /proc /target/proc
-mount --rbind /sys /target/sys
+mount --bind /dev /target/dev
+mount --bind /dev/pts /target/dev/pts
+mount --bind /dev/shm /target/dev/shm
+# Intentionally skip /dev/mqueue and /dev/hugepages
+mount --bind /proc /target/proc
+# Intentionally skip /proc/sys/fs/binfmt_misc and /proc/fs/nfsd
+mount --bind /sys /target/sys
+# Intentionally skipping cgroup FSes.  Unintentionally skipping many more
 ln -s /proc/mounts /target/etc/mtab
 
 perl -i -pe 's/# (en_US.UTF-8)/$1/' /target/etc/locale.gen
