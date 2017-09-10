@@ -1,6 +1,5 @@
 # TODO
 
-* 2017Sep10 Handle ethernet and wireless firmware for NUC
 * 2017Sep10 ETHDEV=$(udevadm...) provides first network device which may not be the device with network.  Use 'ip route' looking for default instead.
 * 2017Sep10 auto-detect uefi use via /sys/firmware/efi
 * 2017Sep10 limit raid selections based on disk count
@@ -15,6 +14,7 @@
 * 2017Sep10 Disable sync initially.  Re-enable after the fact.
 * 2017Sep10 Live CD with persistent data and caching proxy
 # DONE
+* 2017Sep10 2017Sep10 Handle ethernet and wireless firmware for NUC
 * 2017Sep10 2017Sep10 grub-pc needs /tmp executable
 * 2017Sep10 2017Sep10 secondary package install should be non-interactive (skip zfs dialog)
 * 2017Sep10 2017Sep10 Provide utility to destroy /target for testing
